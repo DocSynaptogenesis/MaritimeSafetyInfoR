@@ -3,21 +3,27 @@ title: "PDF Inferno"
 author: "Brendan Knapp"
 date: "November 30, 2017"
 output: 
-  github_document:
+  html_document:
     toc: true
+    toc_float: true
 ---
 
-<!-- <base target="_blank"/> -->
+<base target="_blank"/>
+
+```{r include=FALSE}
+time_start <- Sys.time()
+```
+
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = TRUE)
 ```
 
-The data obtained in this code is available on GitHub [here](https://github.com/DocSynaptogenesis/MaritimeSafetyInfoR).
+The data obtained in this code are available on GitHub [here](https://github.com/DocSynaptogenesis/MaritimeSafetyInfoR).
 
 # Notice to Mariners
 
-* The U.S. Notice to Mariners data is available in multiple formats, but they all leave something to be desired in terms of data quality and completeness. 
+* The U.S. Notice to Mariners data are available in multiple formats, but they all leave something to be desired in terms of data quality and completeness. 
 
 * Unfortunately, there are many Broadcast Warnings included in the PDF publications that are missing in other available formats, making the PDF versions the most complete source of data.
 
@@ -31,6 +37,7 @@ library(tidyr)
 library(stringr)
 library(rvest)
 library(pdftools)
+library(ggplot2)
 ```
 
 # Most Recently Published Issue
@@ -54,10 +61,12 @@ most_recent_issue %<>%
 paste(cat("The week number we will use for our URL range is:\n"), most_recent_issue)
 ```
 
-For demonstration, you can see the 
-* table of contents of the most recent Notice to Mariners (48/2017)
+For demonstration, you can see the
+
+* table of contents of the most recent Notice to Mariners (48/2017):
     + [here](https://msi.nga.mil/NGAPortal/MSI.portal?_nfpb=true&_st=&_pageLabel=msi_ntm_pubview_page&CCD_itemID=201748) 
-* the Broadcast Warnings/MARAD Advisories/Special Warnings PDF
+    
+* the Broadcast Warnings/MARAD Advisories/Special Warnings PDF:
     + [here](https://msi.nga.mil/MSISiteContent/StaticFiles/NAV_PUBS/UNTM/201748/Broadcast_Warn.pdf.)
 
 # URLs
@@ -113,7 +122,7 @@ paste(cat("The resulting regex looks like so:\n"), relevant_terms_regex)
 
 ## `list_to_text()` Modification
 
-This is an incredibly handy `list_to_text()` function that is slightly modified from the that in the [`exploratory` package](https://github.com/exploratory-io/exploratory_func).
+This is an incredibly handy `list_to_text()` function that is slightly modified from that in the [`exploratory` package](https://github.com/exploratory-io/exploratory_func).
 
 The difference is that the `character` returned contains only `unique()` elements from the original `list`, which I have found to be useful when you have a set of key terms with which you'd like to annotate a text dataset.
 
@@ -175,65 +184,66 @@ for(URL in urls){
 
 ## The Heavy Lifting
 
-> There are more steps than required here as the format for which that will be used is not yet determined. Modification from this point into whatever structure is required for future analysis will be simple.
+> There are more steps than required here as the format that will be used is not yet determined. That said, modification from this point into whatever structure is required for future analysis will be simple.
 
 ```{r message=FALSE, warning=FALSE}
 total_df <- raw_df %>%
   mutate(value = str_replace(value, "(\\)\\.)", "\\)\\.~")) %>%
-    separate(value, c("ID", "message"), sep =  "~") %>%
-    mutate(coords_1 = str_extract_all(message,
-                                      "\\d+-\\d+\\.\\d+[NS]{1}\\s\\d+-\\d+\\.\\d+[EW]"),
-           coords_2 = str_extract_all(message,
-                                      "\\d+-\\d+[NS]\\s\\d+-\\d+[EW]")) %>%
-    mutate(coords_1 = list_to_text(coords_1),
-           coords_2 = list_to_text(coords_2)) %>%
-    separate(coords_1, paste0("fine_", c(1:40)), sep = ":") %>%
-    separate(coords_2, paste0("coarse_", c(1:40)), sep = ":") %>%
-    gather(coord_precision, coords, contains("_")) %>%
-    drop_na(coords) %>%
-    separate(coords, c("lat", "long"), sep = " ") %>%
-    mutate(lat = str_replace(lat, "-", "d"),
-           lat = str_replace(lat, "-", "'"),
-           lat = str_replace(lat, "\\.", "'"),
-           lat = if_else(str_detect(coord_precision, "fine"),
-                         str_replace_all(lat, str_sub(lat, -1L, -1L),
-                                         paste0("\\\" ", str_sub(lat, -1L, -1L))),
-                         str_replace_all(lat, str_sub(lat, -1L, -1L),
-                                         paste0(" ", str_sub(lat, -1L, -1L)))),
-           lat = as.numeric(sp::char2dms(lat))) %>%
-    mutate(long = str_replace(long, "-", "d"),
-           long = str_replace(long, "-", "'"),
-           long = str_replace(long, "\\.", "'"),
-           long = if_else(str_detect(coord_precision, "fine"),
-                          str_replace_all(long, str_sub(long, -1L, -1L),
-                                          paste0("\\\" ", str_sub(long, -1L, -1L))),
-                          str_replace_all(long, str_sub(long, -1L, -1L),
-                                          paste0(" ", str_sub(long, -1L, -1L)))),
-           long = as.numeric(sp::char2dms(long))) %>%
-    mutate(relevant_terms = str_extract_all(message, relevant_terms_regex),
-           relevant_terms = list_to_text(relevant_terms)) %>%
-    mutate(time_date = str_extract(message, "\\(\\d{6}Z.*?\\)"),
-           time_date = str_replace_all(time_date, "(\\()|(\\))", ""),
-           message_mday = str_sub(time_date, 1L, 2L),
-           message_month = str_extract(time_date, months_regex),
-           message_year = str_extract(time_date, "\\s\\d{4}"),
-           message_date = as.Date(paste0(message_year,
-                                         message_month,
-                                         message_mday),
-                                  format = "%Y%b%d"),
-           message_time = str_sub(time_date, 3L, 6L),
-           message_time = str_replace(message_time, "(\\d{2})", "\\1:"),
-           message_date_time = as.POSIXct(paste(message_date,
-                                                message_time),
-                                          "%Y-%m-%d %H:%M", tz = "GMT")) %>%
-    rename(zulu_time_date = time_date) %>%
-    select(-message_mday, -message_month, -message_year) %>%
-    mutate(coord_precision = if_else(str_detect(coord_precision, "fine"),
-                                     "fine", "coarse")) %>%
-    select(message_date_time, relevant_terms, long, lat, 
-           coord_precision, message, zulu_time_date, ID) %>%
-    distinct() %>%
-    arrange(desc(message_date_time))
+  separate(value, c("ID", "message"), sep =  "~") %>%
+  group_by(ID) %>%
+  mutate(coords_1 = str_extract_all(message,
+                                    "\\d+-\\d+\\.\\d+[NS]{1}\\s\\d+-\\d+\\.\\d+[EW]"),
+         coords_2 = str_extract_all(message,
+                                    "\\d+-\\d+[NS]\\s\\d+-\\d+[EW]")) %>%
+  mutate(coords_1 = list_to_text(coords_1),
+         coords_2 = list_to_text(coords_2)) %>%
+  separate(coords_1, paste0("fine_", c(1:40)), sep = ":") %>%
+  separate(coords_2, paste0("coarse_", c(1:40)), sep = ":") %>%
+  gather(coord_precision, coords, contains("_")) %>%
+  drop_na(coords) %>%
+  separate(coords, c("lat", "long"), sep = " ") %>%
+  mutate(lat = str_replace(lat, "-", "d"),
+         lat = str_replace(lat, "-", "'"),
+         lat = str_replace(lat, "\\.", "'"),
+         lat = if_else(str_detect(coord_precision, "fine"),
+                       str_replace_all(lat, str_sub(lat, -1L, -1L),
+                                       paste0("\\\" ", str_sub(lat, -1L, -1L))),
+                       str_replace_all(lat, str_sub(lat, -1L, -1L),
+                                       paste0(" ", str_sub(lat, -1L, -1L)))),
+         lat = as.numeric(sp::char2dms(lat))) %>%
+  mutate(long = str_replace(long, "-", "d"),
+         long = str_replace(long, "-", "'"),
+         long = str_replace(long, "\\.", "'"),
+         long = if_else(str_detect(coord_precision, "fine"),
+                        str_replace_all(long, str_sub(long, -1L, -1L),
+                                        paste0("\\\" ", str_sub(long, -1L, -1L))),
+                        str_replace_all(long, str_sub(long, -1L, -1L),
+                                        paste0(" ", str_sub(long, -1L, -1L)))),
+         long = as.numeric(sp::char2dms(long))) %>%
+  mutate(relevant_terms = str_extract_all(message, relevant_terms_regex),
+         relevant_terms = list_to_text(relevant_terms)) %>%
+  mutate(time_date = str_extract(message, "\\(\\d{6}Z.*?\\)"),
+         time_date = str_replace_all(time_date, "(\\()|(\\))", ""),
+         message_mday = str_sub(time_date, 1L, 2L),
+         message_month = str_extract(time_date, months_regex),
+         message_year = str_extract(time_date, "\\s\\d{4}"),
+         message_date = as.Date(paste0(message_year,
+                                       message_month,
+                                       message_mday),
+                                format = "%Y%b%d"),
+         message_time = str_sub(time_date, 3L, 6L),
+         message_time = str_replace(message_time, "(\\d{2})", "\\1:"),
+         message_date_time = as.POSIXct(paste(message_date,
+                                              message_time),
+                                        "%Y-%m-%d %H:%M", tz = "GMT")) %>%
+  rename(zulu_time_date = time_date) %>%
+  select(-message_mday, -message_month, -message_year) %>%
+  mutate(coord_precision = if_else(str_detect(coord_precision, "fine"),
+                                   "fine", "coarse")) %>%
+  select(message_date_time, relevant_terms, long, lat, 
+         coord_precision, message, zulu_time_date, ID) %>%
+  distinct() %>%
+  arrange(desc(message_date_time))
 ```
 
 # Results
@@ -247,8 +257,47 @@ glimpse(total_df)
 
 ```{r}
 pander::panderOptions('table.split.table', Inf)
-pander::pander(head(total_df, n = 5))
+pander::pander(head(total_df, n = 10))
 ```
+
+# Plotting Map Coordinates
+
+With the data extracted and cleaned, let's plot the coordinates on a world map.
+
+```{r fig.height=8, fig.width=12}
+world_map <- borders("world", 
+                     colour="gray50",
+                     fill="gray50")
+
+total_df %>%
+  select(long, lat, relevant_terms) %>%
+  filter(str_detect(relevant_terms, "MISSILE|:")) %>%
+  ggplot() +
+  world_map +
+  geom_point(aes(long, lat, 
+                 color = factor(relevant_terms,
+                                levels = c("GUNNERY:MISSILE:HAZARDOUS",
+                                           "MISSILE",
+                                           "GUNNERY",
+                                           "HAZARDOUS"))),
+             size = 3, alpha = 0.35) +
+  scale_colour_discrete(name = "Terms Matched",
+                        labels = c("All Terms",
+                                   "Missile",
+                                   "Gunnery",
+                                   "Hazardous")) +
+  theme(legend.position = "bottom", 
+        legend.title = element_text(),
+        axis.title = element_blank(),
+        axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        panel.grid = element_blank()) +
+  labs(title = "2017 Broadcast Warnings",
+       subtitle = "Brendan Knapp",
+       caption = "Source: National Geospatial-Intelligence Agency")
+
+```
+
 
 # Save
 
@@ -260,6 +309,13 @@ readr::write_csv(total_df, "data_raw/total_df.csv")
 save(total_df, file = "data/total_df.rda")
 ```
 
+# Time Elapsed
+
+The time taken to execute all code and knit the document follows. Not too shabby.
+
+```{r}
+Sys.time() - time_start
+```
 
 # `sessionInfo()`
 

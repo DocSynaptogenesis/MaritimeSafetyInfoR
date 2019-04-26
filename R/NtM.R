@@ -15,12 +15,12 @@ list_to_text <- function(column, sep = ":"){
 }
 
 
-#' @title Yearly 
+#' @title Yearly Note To Mariners Scrapes
 #'
 #' @author Brendan Knapp, \email{brendan.knapp@@nps.edu}
 #' @author Christopher Callaghan, \email{cjcallag@@nps.edu}
 #'
-#' @importFrom dplyr as_tibble if_else mutate group_by arrange desc select
+#' @importFrom dplyr as_tibble if_else mutate group_by arrange desc select rename distinct
 #' @importFrom magrittr %>%
 #' @importFrom pdftools pdf_text
 #' @importFrom purrr map_dfr
@@ -107,8 +107,9 @@ scrape_NtM <- function(year, format) {
                            str_replace_all(lat, str_sub(lat, -1L, -1L),
                                            paste0("\\\" ", str_sub(lat, -1L, -1L))),
                            str_replace_all(lat, str_sub(lat, -1L, -1L),
-                                           paste0(" ", str_sub(lat, -1L, -1L)))),
-             lat = as.numeric(char2dms(lat))) %>%
+                                           paste0(" ", str_sub(lat, -1L, -1L))))#,
+             #lat = as.numeric(char2dms(lat))
+             ) %>%
       mutate(long = str_replace(long, "-", "d"),
              long = str_replace(long, "-", "'"),
              long = str_replace(long, "\\.", "'"),
@@ -116,8 +117,9 @@ scrape_NtM <- function(year, format) {
                             str_replace_all(long, str_sub(long, -1L, -1L),
                                             paste0("\\\" ", str_sub(long, -1L, -1L))),
                             str_replace_all(long, str_sub(long, -1L, -1L),
-                                            paste0(" ", str_sub(long, -1L, -1L)))),
-             long = as.numeric(char2dms(long))) %>%
+                                            paste0(" ", str_sub(long, -1L, -1L))))#,
+             #long = as.numeric(char2dms(long))
+             ) %>%
       mutate(time_date = str_extract(message, "\\(\\d{6}Z.*?\\)"),
              time_date = str_replace_all(time_date, "(\\()|(\\))", ""),
              message_mday = str_sub(time_date, 1L, 2L),
@@ -145,3 +147,26 @@ scrape_NtM <- function(year, format) {
   }
 }
 
+#' @title Area matcher from scrapes
+#'
+#' @author Christopher Callaghan, \email{cjcallag@@nps.edu}
+#' 
+#' @importFrom dplyr mutate group_by select rename
+#' @importFrom magrittr %>%
+#' @importFrom stringr str_to_upper str_detect
+#'
+#' @export
+scrape_cleaner <- function(.scrape_df, AOR_search, ...){
+  if(!is.data.frame(.scrape_df)){
+    stop("Data frame provided is not valid.", call. = FALSE)
+  }
+  if(!is.character(AOR_search)){
+    stop("`AOR_search` value provided is not a character.", call. = FALSE)
+  }
+  AOR_search <- str_to_upper(AOR_search)
+  
+  .scrape_df %>%
+    mutate(text = str_to_upper(message)) %>%
+    mutate(test = str_detect(text, AOR_search)) %>%
+    select(message_date_time, long, lat, coord_precision, message, zulu_time_date,ID)
+}

@@ -2,12 +2,12 @@
 % Please edit documentation in R/NtM.R
 \name{scrape_NtM}
 \alias{scrape_NtM}
-\title{Yearly}
+\title{Yearly Note To Mariners Scrapes}
 \usage{
 scrape_NtM(year, format)
 }
 \description{
-Yearly
+Yearly Note To Mariners Scrapes
 }
 \author{
 Brendan Knapp, \email{brendan.knapp@nps.edu}

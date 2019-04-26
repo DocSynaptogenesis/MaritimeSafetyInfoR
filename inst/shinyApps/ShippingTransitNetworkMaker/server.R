@@ -5,7 +5,7 @@ packages <- c("shiny", "DT", "shinythemes",
               "chorddiag", "anytime", "sp",
               "maptools", "rgdal", "rgeos",
               "tlocoh", "igraph", "leaflet",
-              "rmapshaper")
+              "rmapshaper", "dplyr")
 lapply(packages, require, character.only=TRUE)
 
 shinyServer(function(input, output, session) {

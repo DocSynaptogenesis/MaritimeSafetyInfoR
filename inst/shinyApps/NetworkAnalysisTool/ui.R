@@ -31,7 +31,7 @@ shinyUI(fluidPage(
                                       offset = 2,
                                       h5("Instructions"),
                                       br(),
-                                      p("First import a list of ships with MMSI and associated companies. Then import loitering table, which must include loitering ships (identified by MMSI) and loitering polygon."),
+                                      p(HTML(paste0("First import a list of ships with MMSI and associated companies. Then import loitering table, which must include loitering ships (identified by MMSI) and loitering polygon. If you do not have a sample of these formats, you may download a sample list of ships", a(href='https://github.com/NPSCORELAB/COREmaritime/blob/master/data/Edgelist_Master.xlsx', " here "), "and a loitering spread sheet", a(href='https://github.com/NPSCORELAB/COREmaritime/blob/master/data/Jan_Isos99.csv'," here "), ".", sep=" "))),
                                       br(),
                                       column(width=12,
                                              align = "center",

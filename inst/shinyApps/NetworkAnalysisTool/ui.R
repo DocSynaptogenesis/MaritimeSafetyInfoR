@@ -11,7 +11,7 @@ shinyUI(fluidPage(
   theme = shinytheme("paper"),
   navbarPage("Network Explorer Version",
              tabPanel("Data Import",
-                      br(),br(),#br(),
+                      br(),br(),
                       tags$head(
                         tags$style(HTML("
                                         @import url('//fonts.googleapis.com/css?family=Fjalla One|Cabin:400,700');
@@ -39,14 +39,16 @@ shinyUI(fluidPage(
                                                        "Upload a list of MMSIs and companies",
                                                        #accept = c(".csv"),
                                                        buttonLabel = "Browse",
-                                                       placeholder = "No file selected"),
+                                                       placeholder = "No file selected"
+                                                       ),
                                              br(),
                                              fileInput("links2",
                                                        
                                                        "Upload a list of MMSIs and companies",
                                                        accept = c(".csv"),
                                                        buttonLabel = "Browse",
-                                                       placeholder = "No file selected"),
+                                                       placeholder = "No file selected"
+                                                       ),
                                              br(),
                                              useShinyjs(),
                                              extendShinyjs(text = jsResetCode),
@@ -57,21 +59,10 @@ shinyUI(fluidPage(
                       mainPanel() #nothing goes here
                         ),
              tabPanel("Boats and Areas",
-                      # sidebarLayout(
-                      #   sidebarPanel(
-                      #     width=0
-                      #    ),
                       mainPanel(
                         tabsetPanel(
-                          # tabPanel("Network", visNetworkOutput("network", height = "700px", width = "100%")
                           tabPanel("Network", bootstrapPage(
                             tags$head(tags$style("#network{height:85vh !important;}")), #renders the Network output as 85% of the screen
-                            # absolutePanel(top = "30%", right = "20%", width = "20%", draggable = TRUE,
-                            #               selectInput("measure1", "Choose a measure for sizing:", choices = c("None",
-                            #                                                                                  "Degree")),
-                            #               style = "opacity: 0.85; z-index: 1000;"
-                            #               
-                            # ),
                             visNetworkOutput("network")
                           )
                           ),
@@ -82,10 +73,6 @@ shinyUI(fluidPage(
                       # ) #sidebarLayout ends
              ),# tabPanel "Network" ends
              tabPanel("Coloitering Ships", 
-                      # sidebarLayout(
-                      #   sidebarPanel(
-                      #     width=0
-                      #   ),
                       mainPanel(
                         tabsetPanel(
                           #tabPanel("Network", visNetworkOutput("network2", height = "700px", width = "100%")
@@ -107,14 +94,9 @@ shinyUI(fluidPage(
                       ) #mainPanel ends
                       # ) #sidebarLayout ends
              ),# tabPanel "Coloitering Ships" ends
-             tabPanel("Coorporates", 
-                      # sidebarLayout(
-                      #   sidebarPanel(
-                      #     width=0
-                      #   ),
+             tabPanel("Coorporates",
                       mainPanel(
                         tabsetPanel(
-                          #tabPanel("Network", visNetworkOutput("network3", height = "700px", width = "100%")
                           tabPanel("Network", bootstrapPage(
                             tags$head(tags$style("#network3{height:85vh !important;}")), #renders the Network output as 85% of the screen
                             absolutePanel(top = "30%", right = "20%", width = "20%", draggable = TRUE,
@@ -127,15 +109,36 @@ shinyUI(fluidPage(
                             visNetworkOutput("network3")
                           )
                           ),
-                          # tabPanel("Coorporates2", visNetworkOutput("network4", height = "700px", width = "100%")), #This network needs to be discussed 10/09
                           tabPanel("Data", DT::dataTableOutput("table3"))
                         ),
                         width = 12
                       ) #mainPanel ends
                       # ) #sidebarLayout ends
              ) # tabPanel "Coloitering Ships" ends
-             # ,
-             # tabPanel("Downloads")
+             ,
+             tabPanel("Downloads",
+                      fluidPage(
+                        shiny::column(width=8,
+                                      offset = 2,
+                                      h3("Instructions"),
+                                      p("In this section you will be able to download HTML widgets for all the networks generated in this applications. Please take note that all dynamic capabilities (e.g., dynamic sizing) will not be available in these downloads."),
+                                      hr(),
+                                      br(),
+                                      column(12,
+                                             column(4,
+                                                    h5("Download Boats and Areas Network:"),
+                                                    shiny::downloadButton("download_mmsixpol",
+                                                                          label = "Download")),
+                                             column(4,
+                                                    h5("Download Ship Coloitering Network:"),
+                                                    shiny::downloadButton("download_sxs",
+                                                                          label = "Download")),
+                                             column(4,
+                                                    h5("Download Coorporates Network:"),
+                                                    shiny::downloadButton("download_cxc",
+                                                                          label = "Download"))
+                                             ))
+                      ))
                         ) # navbarPage ends
              )
   )

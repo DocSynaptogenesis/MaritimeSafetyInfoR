@@ -238,4 +238,50 @@ shinyServer(function(input, output, session){
                                    bFilter=TRUE,
                                    ordering=TRUE))
   })
+  output$download_mmsixpol <- downloadHandler(
+    filename = paste('mmsitopoly-', Sys.Date(), '.html', sep=''),
+    content = function(file) {
+      listed_data <- get_data()
+      g_mmsiXpoli <- listed_data$g_mmsiXpoli
+      vn <- visNetwork::visIgraph(g_mmsiXpoli)%>%
+        visNodes(shadow=TRUE)%>%
+        visEdges(color=list(color="slategrey", highlight="black"))%>%
+        visOptions(highlightNearest = TRUE, nodesIdSelection=TRUE)%>%
+        visInteraction(navigationButtons = TRUE, keyboard=TRUE) %>%
+        visLegend(addNodes=list(
+          list(label="Ship", shape="dot", size=15, color="#2b83ba"),
+          list(label="Loitering Polygon", shape="diamond", size=15, color="#d7191c")
+        ), useGroups=FALSE, position="right") 
+      visNetwork::visSave(vn, file=file)
+    }
+  )
+  output$download_sxs <- downloadHandler(
+    filename = paste('shiptoship-', Sys.Date(), '.html', sep=''),
+    content = function(file) {
+      listed_data <- get_data()
+      g_sxs <- listed_data$g_sxs
+      vn <- visNetwork::visIgraph(g_sxs) %>%
+        visIgraphLayout(layout="layout_with_kk")%>%
+        visOptions(highlightNearest = TRUE, nodesIdSelection=TRUE)%>%
+        visInteraction(navigationButtons = TRUE, keyboard=TRUE)
+      visNetwork::visSave(vn, file=file)
+    }
+  )
+  output$download_cxc <- downloadHandler(
+    filename = paste('companytocompany-', Sys.Date(), '.html', sep=''),
+    content = function(file) {
+      listed_data <- get_data()
+      g_cxc <- listed_data$g_sxs
+      ledges <- data.frame(color = c("#d73027", "#4575b4"),
+                           label = c("Business", "Co-loitering"), arrows =c("to", "to"))
+      vn <- visNetwork::visIgraph(g_cxc) %>%
+        visIgraphLayout(layout="layout_with_kk")%>%
+        visNodes(shadow=TRUE)%>%
+        visEdges(arrows="")%>%
+        visOptions(highlightNearest = TRUE)%>%
+        visInteraction(navigationButtons = TRUE, keyboard=TRUE) %>%
+        visLegend(addEdges = ledges, useGroups=FALSE, position="right")
+      visNetwork::visSave(vn, file=file)
+    }
+  )
 }) # End of Server

@@ -11,7 +11,7 @@ install.packages("devtools")
   2. Install the package using `devtools`.
   
 ``` r
-devtools::install_github("NPSCORELAB/COREmisc", upgrade="never")
+devtools::install_github("NPSCORELAB/COREmaritime", upgrade="never")
 ```
 
 ## Using Functions Locally
